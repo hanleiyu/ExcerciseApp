@@ -33,6 +33,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.personal.exercise.domain.Category
 import com.personal.exercise.domain.WeekCalculator
 import com.personal.exercise.domain.Workout
+import com.personal.exercise.domain.formatYuan
 import com.personal.exercise.domain.toZhDateWeek
 import com.personal.exercise.ui.RecordsViewModel
 import com.personal.exercise.ui.components.AppCard
@@ -40,6 +41,7 @@ import com.personal.exercise.ui.components.ScreenHeader
 import com.personal.exercise.ui.theme.BalanceOrange
 import com.personal.exercise.ui.theme.CardBg
 import com.personal.exercise.ui.theme.Green
+import com.personal.exercise.ui.theme.Line
 import com.personal.exercise.ui.theme.ScreenPad
 import com.personal.exercise.ui.theme.StrengthBlue
 import com.personal.exercise.ui.theme.TextHint
@@ -59,6 +61,8 @@ fun RecordsScreen(
     val selected by vm.selected.collectAsStateWithLifecycle()
     val today = LocalDate.now()
     val monthStats = WeekCalculator.statsForMonth(workouts, month)
+    val monthEarn = WeekCalculator.monthEarnYuan(workouts, month)
+    val totalEarn = WeekCalculator.totalEarnYuan(workouts)
     val dayWorkouts = workouts.filter { it.date == selected }
     val dayTotal = dayWorkouts.sumOf { it.rawMinutes }
     val dotsByDay = workouts
@@ -97,6 +101,39 @@ fun RecordsScreen(
                     MonthStat("有氧", "${monthStats.rawAerobic}分钟")
                     MonthStat("力量", "${monthStats.rawStrength}分钟")
                     MonthStat("平衡", "${monthStats.balanceSessions}次")
+                }
+                Spacer(Modifier.height(16.dp))
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .background(Line),
+                )
+                Spacer(Modifier.height(16.dp))
+                Row(
+                    Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.Bottom,
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text("本月净赚", color = TextMain, fontSize = 14.sp)
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            formatYuan(monthEarn),
+                            color = Green,
+                            fontSize = 28.sp,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text("累计", color = TextMain, fontSize = 14.sp)
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            formatYuan(totalEarn),
+                            color = TextMain,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
                 }
             }
         }

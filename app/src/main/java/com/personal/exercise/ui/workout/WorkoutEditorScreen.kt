@@ -19,6 +19,8 @@ import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
@@ -32,6 +34,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -55,6 +58,7 @@ import com.personal.exercise.ui.theme.Line
 import com.personal.exercise.ui.theme.ScreenPad
 import com.personal.exercise.ui.theme.TextMain
 import com.personal.exercise.ui.theme.TextMuted
+import com.personal.exercise.ui.theme.Track
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
@@ -67,7 +71,6 @@ fun WorkoutEditorScreen(
     onDone: () -> Unit,
 ) {
     val activities by vm.activities.collectAsStateWithLifecycle()
-    val settings by vm.settings.collectAsStateWithLifecycle()
     val existing by vm.existing.collectAsStateWithLifecycle()
 
     var category by remember { mutableStateOf(Category.AEROBIC) }
@@ -76,6 +79,7 @@ fun WorkoutEditorScreen(
     var intensity by remember { mutableStateOf<Intensity?>(Intensity.MID) }
     var date by remember { mutableStateOf(initialDate ?: LocalDate.now()) }
     var note by remember { mutableStateOf("") }
+    var isFree by remember { mutableStateOf(false) }
     var showDate by remember { mutableStateOf(false) }
     var showCustom by remember { mutableStateOf(false) }
     var customName by remember { mutableStateOf("") }
@@ -92,15 +96,11 @@ fun WorkoutEditorScreen(
         intensity = w.intensity ?: if (w.category == Category.AEROBIC) Intensity.MID else null
         date = w.date
         note = w.note.orEmpty()
+        isFree = w.isFree
         hydrated = true
     }
 
     val names = activities.filter { it.category == category && !it.hidden }.map { it.name }
-    val credited = when (category) {
-        Category.AEROBIC -> minutes * (intensity?.coefficient ?: 0)
-        Category.STRENGTH -> minutes
-        Category.BALANCE -> 0
-    }
     val canSave = !activity.isNullOrBlank() && minutes > 0 &&
         (category != Category.AEROBIC || intensity != null)
 
@@ -158,19 +158,6 @@ fun WorkoutEditorScreen(
                 onChange = { minutes = it },
                 chips = Presets.durationChips[category] ?: emptyList(),
             )
-            Spacer(Modifier.height(12.dp))
-            Text(
-                when (category) {
-                    Category.AEROBIC -> {
-                        val coef = intensity?.coefficient ?: 0
-                        "计入有氧目标：${credited}分钟（${intensity?.label ?: "—"} ×$coef）"
-                    }
-                    Category.STRENGTH -> "按实际时长计入力量目标 · 计入 ${minutes}分钟"
-                    Category.BALANCE -> "单独统计（可选目标 ${settings.balanceGoal}次/周），不影响主目标"
-                },
-                color = TextMuted,
-                fontSize = 13.sp,
-            )
         }
 
         if (category == Category.AEROBIC) {
@@ -209,6 +196,24 @@ fun WorkoutEditorScreen(
         Spacer(Modifier.height(12.dp))
         AppCard {
             Row(
+                Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("免费", color = TextMain, fontSize = 15.sp, modifier = Modifier.weight(1f))
+                Switch(
+                    checked = isFree,
+                    onCheckedChange = { isFree = it },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = Color.White,
+                        checkedTrackColor = Green,
+                        uncheckedThumbColor = Color.White,
+                        uncheckedTrackColor = Track,
+                        uncheckedBorderColor = Line,
+                    ),
+                )
+            }
+            Spacer(Modifier.height(14.dp))
+            Row(
                 Modifier
                     .fillMaxWidth()
                     .clickable { showDate = true },
@@ -240,6 +245,7 @@ fun WorkoutEditorScreen(
                     intensity = if (category == Category.AEROBIC) intensity else null,
                     date = date,
                     note = note.ifBlank { null },
+                    isFree = isFree,
                 ),
                 onDone = onDone,
             )

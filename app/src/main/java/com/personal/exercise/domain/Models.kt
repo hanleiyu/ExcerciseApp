@@ -1,5 +1,6 @@
 package com.personal.exercise.domain
 
+import java.text.NumberFormat
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -85,6 +86,7 @@ data class Workout(
     val intensity: Intensity?,
     val date: LocalDate,
     val note: String?,
+    val isFree: Boolean = false,
 ) {
     val creditedMinutes: Int
         get() = when (category) {
@@ -177,6 +179,9 @@ fun LocalDate.toZhDateWeek(): String {
 }
 
 fun LocalDate.toIso(): String = format(DateTimeFormatter.ISO_LOCAL_DATE)
+
+fun formatYuan(amount: Int): String =
+    "¥" + NumberFormat.getIntegerInstance(Locale.US).format(amount)
 
 fun formatSigned(value: Double, decimals: Int = 0): String {
     val body = if (decimals <= 0) {

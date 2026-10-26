@@ -22,6 +22,7 @@ fun WorkoutEntity.toDomain() = Workout(
     intensity = intensity?.let { Intensity.valueOf(it) },
     date = LocalDate.ofEpochDay(dateEpochDay),
     note = note,
+    isFree = isFree,
 )
 
 fun Workout.toEntity(createdAt: Long = System.currentTimeMillis()) = WorkoutEntity(
@@ -33,6 +34,7 @@ fun Workout.toEntity(createdAt: Long = System.currentTimeMillis()) = WorkoutEnti
     dateEpochDay = date.toEpochDay(),
     note = note,
     createdAt = createdAt,
+    isFree = isFree,
 )
 
 fun ActivityEntity.toDomain() = ActivityItem(

@@ -46,6 +46,7 @@ object BackupCodec {
                     put("intensity", w.intensity?.name)
                     put("date", w.date.toIso())
                     put("note", w.note)
+                    put("isFree", w.isFree)
                 })
             }
         })
@@ -114,6 +115,7 @@ object BackupCodec {
                 dateEpochDay = LocalDate.parse(o.getString("date")).toEpochDay(),
                 note = o.optString("note").ifBlank { null },
                 createdAt = System.currentTimeMillis(),
+                isFree = o.optBoolean("isFree", false),
             )
         }
         val activities = root.getJSONArray("activities").mapObjects { o ->
@@ -142,7 +144,7 @@ object BackupCodec {
     }
 
     fun workoutsCsv(workouts: List<com.personal.exercise.domain.Workout>): String {
-        val header = "日期,类别,项目,时长分钟,强度,计入分钟,备注"
+        val header = "日期,类别,项目,时长分钟,强度,计入分钟,免费,备注"
         val rows = workouts.sortedBy { it.date }.map { w ->
             listOf(
                 w.date.toIso(),
@@ -151,6 +153,7 @@ object BackupCodec {
                 w.durationMinutes.toString(),
                 w.intensity?.label.orEmpty(),
                 w.creditedMinutes.toString(),
+                if (w.isFree) "是" else "否",
                 csv(w.note.orEmpty()),
             ).joinToString(",")
         }
