@@ -16,7 +16,9 @@ object PlanEngine {
         if (mode != TargetMode.PLAN) return state.copy(pendingAdvanceMessage = null)
 
         val currentWeekStart = today.weekStartMonday()
-        val earliestWorkoutWeek = workouts.minOfOrNull { it.date.weekStartMonday() }
+        val earliestWorkoutWeek = workouts
+            .filter { it.category.countsTowardStats }
+            .minOfOrNull { it.date.weekStartMonday() }
             ?: return state.copy(pendingAdvanceMessage = null)
         val needed = weeksToAdvance.coerceAtLeast(1)
 

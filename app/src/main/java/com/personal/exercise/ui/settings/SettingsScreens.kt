@@ -291,7 +291,9 @@ fun ActivitiesScreen(
                     }) { Text("改名") }
                 }
             }
-            TextButton(onClick = { showAdd = true }) { Text("+ 新增自定义") }
+            if (category != Category.PERIOD) {
+                TextButton(onClick = { showAdd = true }) { Text("+ 新增自定义") }
+            }
         }
     }
 
