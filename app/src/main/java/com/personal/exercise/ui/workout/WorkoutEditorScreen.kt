@@ -94,6 +94,11 @@ fun WorkoutEditorScreen(
         activity = w.activityName
         minutes = w.durationMinutes
         intensity = w.intensity ?: if (w.category == Category.AEROBIC) Intensity.MID else null
+        if (w.category == Category.PERIOD) {
+            activity = Category.PERIOD.label
+            minutes = 0
+            intensity = null
+        }
         date = w.date
         note = w.note.orEmpty()
         isFree = w.isFree
@@ -101,8 +106,11 @@ fun WorkoutEditorScreen(
     }
 
     val names = activities.filter { it.category == category && !it.hidden }.map { it.name }
-    val canSave = !activity.isNullOrBlank() && minutes > 0 &&
-        (category != Category.AEROBIC || intensity != null)
+    val canSave = when (category) {
+        Category.PERIOD -> true
+        Category.AEROBIC -> !activity.isNullOrBlank() && minutes > 0 && intensity != null
+        Category.STRENGTH, Category.BALANCE -> !activity.isNullOrBlank() && minutes > 0
+    }
 
     Column(
         Modifier
@@ -128,36 +136,49 @@ fun WorkoutEditorScreen(
                     val next = Category.entries.first { it.label == label }
                     if (next != category) {
                         category = next
-                        activity = null
-                        minutes = Presets.durationChips[next]?.getOrNull(2) ?: 30
-                        intensity = if (next == Category.AEROBIC) Intensity.MID else null
+                        if (next == Category.PERIOD) {
+                            activity = Category.PERIOD.label
+                            minutes = 0
+                            intensity = null
+                        } else {
+                            activity = null
+                            minutes = Presets.durationChips[next]?.getOrNull(2) ?: 30
+                            intensity = if (next == Category.AEROBIC) Intensity.MID else null
+                        }
                     }
                 },
             )
         }
 
-        Spacer(Modifier.height(12.dp))
-        AppCard {
-            Text("项目", color = TextMuted, fontSize = 13.sp)
-            Spacer(Modifier.height(10.dp))
-            ChoiceChipRow(
-                options = names + "+自定义",
-                selected = activity,
-                onSelect = { chosen ->
-                    if (chosen == "+自定义") showCustom = true else activity = chosen
-                },
-            )
-        }
+        if (category != Category.PERIOD) {
+            Spacer(Modifier.height(12.dp))
+            AppCard {
+                Text("项目", color = TextMuted, fontSize = 13.sp)
+                Spacer(Modifier.height(10.dp))
+                ChoiceChipRow(
+                    options = names + "+自定义",
+                    selected = activity,
+                    onSelect = { chosen ->
+                        if (chosen == "+自定义") showCustom = true else activity = chosen
+                    },
+                )
+            }
 
-        Spacer(Modifier.height(12.dp))
-        AppCard {
-            Text("时长", color = TextMuted, fontSize = 13.sp)
-            Spacer(Modifier.height(10.dp))
-            DurationStepper(
-                value = minutes,
-                onChange = { minutes = it },
-                chips = Presets.durationChips[category] ?: emptyList(),
-            )
+            Spacer(Modifier.height(12.dp))
+            AppCard {
+                Text("时长", color = TextMuted, fontSize = 13.sp)
+                Spacer(Modifier.height(10.dp))
+                DurationStepper(
+                    value = minutes,
+                    onChange = { minutes = it },
+                    chips = Presets.durationChips[category] ?: emptyList(),
+                )
+            }
+        } else {
+            Spacer(Modifier.height(12.dp))
+            AppCard {
+                Text("项目固定为「经期」，不必填时长或强度，不计入运动统计。", color = TextMuted, fontSize = 13.sp)
+            }
         }
 
         if (category == Category.AEROBIC) {
@@ -240,8 +261,8 @@ fun WorkoutEditorScreen(
                 Workout(
                     id = existing?.id ?: 0,
                     category = category,
-                    activityName = activity.orEmpty(),
-                    durationMinutes = minutes,
+                    activityName = if (category == Category.PERIOD) Category.PERIOD.label else activity.orEmpty(),
+                    durationMinutes = if (category == Category.PERIOD) 0 else minutes,
                     intensity = if (category == Category.AEROBIC) intensity else null,
                     date = date,
                     note = note.ifBlank { null },

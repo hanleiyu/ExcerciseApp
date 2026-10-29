@@ -40,6 +40,7 @@ import com.personal.exercise.ui.components.AppCard
 import com.personal.exercise.ui.components.ScreenHeader
 import com.personal.exercise.ui.theme.BalanceOrange
 import com.personal.exercise.ui.theme.CardBg
+import com.personal.exercise.ui.theme.Danger
 import com.personal.exercise.ui.theme.Green
 import com.personal.exercise.ui.theme.Line
 import com.personal.exercise.ui.theme.ScreenPad
@@ -64,7 +65,7 @@ fun RecordsScreen(
     val monthEarn = WeekCalculator.monthEarnYuan(workouts, month)
     val totalEarn = WeekCalculator.totalEarnYuan(workouts)
     val dayWorkouts = workouts.filter { it.date == selected }
-    val dayTotal = dayWorkouts.sumOf { it.rawMinutes }
+    val dayTotal = dayWorkouts.filter { it.category.countsTowardStats }.sumOf { it.rawMinutes }
     val dotsByDay = workouts
         .filter { YearMonth.from(it.date) == month }
         .groupBy { it.date }
@@ -232,7 +233,8 @@ private fun DayCell(
     dots: Set<Category>,
     onSelect: (LocalDate) -> Unit,
 ) {
-    val ring = date == selected || date == today
+    val focus = date == selected || date == today
+    val period = Category.PERIOD in dots
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
@@ -244,10 +246,17 @@ private fun DayCell(
             Modifier.size(34.dp),
             contentAlignment = Alignment.Center,
         ) {
-            if (ring) {
+            if (period) {
                 Box(
                     Modifier
                         .size(34.dp)
+                        .border(1.5.dp, Danger, CircleShape),
+                )
+            }
+            if (focus) {
+                Box(
+                    Modifier
+                        .size(if (period) 26.dp else 34.dp)
                         .border(1.5.dp, Green, CircleShape),
                 )
             }
@@ -261,7 +270,7 @@ private fun DayCell(
         Spacer(Modifier.height(4.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(3.dp), verticalAlignment = Alignment.CenterVertically) {
             Category.entries.forEach { cat ->
-                if (cat in dots) {
+                if (cat.showsCalendarDot && cat in dots) {
                     Box(Modifier.size(5.dp).clip(CircleShape).background(cat.dotColor()))
                 }
             }
@@ -304,7 +313,7 @@ private fun DayWorkoutRow(w: Workout, onClick: () -> Unit) {
             Spacer(Modifier.height(4.dp))
             Text(w.category.label, color = TextMuted, fontSize = 13.sp)
         }
-        Text("${w.durationMinutes}分钟", color = TextMain, fontSize = 16.sp)
+        Text(w.listDurationLabel, color = TextMain, fontSize = 16.sp)
     }
 }
 
@@ -312,4 +321,5 @@ private fun Category.dotColor(): Color = when (this) {
     Category.AEROBIC -> Green
     Category.STRENGTH -> StrengthBlue
     Category.BALANCE -> BalanceOrange
+    Category.PERIOD -> Danger
 }

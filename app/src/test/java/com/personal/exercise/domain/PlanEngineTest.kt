@@ -179,6 +179,27 @@ class PlanEngineTest {
     }
 
     @Test
+    fun periodWorkoutsDoNotStartPlanEvaluation() {
+        val workouts = listOf(workout(Category.PERIOD, 0, null, week0))
+        val result = PlanEngine.evaluate(PlanState(), todayInWeek2, TargetMode.PLAN, workouts)
+        assertEquals(Stage.STAGE_1, result.stage)
+        assertEquals(0, result.consecutiveMetWeeks)
+        assertNull(result.lastEvaluatedWeekStart)
+        assertEquals(0, result.weeksSpent[Stage.STAGE_1])
+    }
+
+    @Test
+    fun periodDoesNotBlockAdvancementOnMetWeeks() {
+        val workouts = metWeek(week0) +
+            listOf(workout(Category.PERIOD, 0, null, week0)) +
+            metWeek(week1) +
+            listOf(workout(Category.PERIOD, 0, null, week1))
+        val result = PlanEngine.evaluate(PlanState(), todayInWeek2, TargetMode.PLAN, workouts)
+        assertEquals(Stage.STAGE_2, result.stage)
+        assertTrue(result.pendingAdvanceMessage!!.contains("阶段 2"))
+    }
+
+    @Test
     fun balanceSessionsDoNotHelpAdvancement() {
         val workouts = listOf(
             workout(Category.AEROBIC, 80, Intensity.MID, week0),
