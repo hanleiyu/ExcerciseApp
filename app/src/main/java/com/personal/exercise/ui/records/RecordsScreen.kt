@@ -251,7 +251,7 @@ private fun DayCell(
             if (selectedDay) {
                 Box(
                     Modifier
-                        .size(if (period) 26.dp else 34.dp)
+                        .size(34.dp)
                         .border(1.5.dp, Green, CircleShape),
                 )
             }
