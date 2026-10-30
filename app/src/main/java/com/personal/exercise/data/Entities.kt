@@ -14,6 +14,7 @@ data class WorkoutEntity(
     val dateEpochDay: Long,
     val note: String?,
     val createdAt: Long,
+    val isFree: Boolean = false,
 )
 
 @Entity(

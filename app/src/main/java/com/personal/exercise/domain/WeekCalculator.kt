@@ -4,6 +4,8 @@ import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
 
+const val FREE_EARN_YUAN = 200
+
 object WeekCalculator {
     fun statsForWeek(workouts: List<Workout>, weekStart: LocalDate): WeekStats {
         val start = weekStart.weekStartMonday()
@@ -24,6 +26,12 @@ object WeekCalculator {
             statsForWeek(workouts, week)
         }
     }
+
+    fun monthEarnYuan(workouts: List<Workout>, month: YearMonth): Int =
+        workouts.count { it.isFree && YearMonth.from(it.date) == month } * FREE_EARN_YUAN
+
+    fun totalEarnYuan(workouts: List<Workout>): Int =
+        workouts.count { it.isFree } * FREE_EARN_YUAN
 
     fun statsForMonth(workouts: List<Workout>, month: YearMonth): MonthStats {
         val inMonth = workouts.filter { YearMonth.from(it.date) == month }
