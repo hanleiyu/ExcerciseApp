@@ -1,5 +1,6 @@
 package com.personal.exercise.ui.records
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -25,6 +26,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -40,6 +45,7 @@ import com.personal.exercise.ui.components.AppCard
 import com.personal.exercise.ui.components.ScreenHeader
 import com.personal.exercise.ui.theme.BalanceOrange
 import com.personal.exercise.ui.theme.CardBg
+import com.personal.exercise.ui.theme.ChartBlue
 import com.personal.exercise.ui.theme.Danger
 import com.personal.exercise.ui.theme.Green
 import com.personal.exercise.ui.theme.Line
@@ -229,7 +235,8 @@ private fun DayCell(
     onSelect: (LocalDate) -> Unit,
 ) {
     val selectedDay = date == selected
-    val period = Category.PERIOD in dots
+    val hasPeriod = Category.PERIOD in dots
+    val hasBowel = Category.BOWEL in dots
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
@@ -241,13 +248,6 @@ private fun DayCell(
             Modifier.size(34.dp),
             contentAlignment = Alignment.Center,
         ) {
-            if (period) {
-                Box(
-                    Modifier
-                        .size(34.dp)
-                        .border(1.5.dp, Danger, CircleShape),
-                )
-            }
             if (selectedDay) {
                 Box(
                     Modifier
@@ -269,8 +269,40 @@ private fun DayCell(
                     Box(Modifier.size(5.dp).clip(CircleShape).background(cat.dotColor()))
                 }
             }
+            if (hasPeriod) {
+                PeriodTriangleMark()
+            }
+            if (hasBowel) {
+                BowelCheckMark()
+            }
         }
         Spacer(Modifier.height(4.dp))
+    }
+}
+
+@Composable
+private fun PeriodTriangleMark() {
+    Canvas(Modifier.size(6.dp)) {
+        val path = Path().apply {
+            moveTo(size.width / 2f, 0f)
+            lineTo(size.width, size.height)
+            lineTo(0f, size.height)
+            close()
+        }
+        drawPath(path, color = Danger)
+    }
+}
+
+@Composable
+private fun BowelCheckMark() {
+    Canvas(Modifier.size(7.dp)) {
+        val stroke = Stroke(width = size.minDimension * 0.22f, cap = StrokeCap.Round, join = StrokeJoin.Round)
+        val path = Path().apply {
+            moveTo(size.width * 0.12f, size.height * 0.55f)
+            lineTo(size.width * 0.38f, size.height * 0.82f)
+            lineTo(size.width * 0.88f, size.height * 0.18f)
+        }
+        drawPath(path, color = ChartBlue, style = stroke)
     }
 }
 
@@ -317,4 +349,5 @@ private fun Category.dotColor(): Color = when (this) {
     Category.STRENGTH -> StrengthBlue
     Category.BALANCE -> BalanceOrange
     Category.PERIOD -> Danger
+    Category.BOWEL -> ChartBlue
 }
