@@ -40,7 +40,6 @@ import com.personal.exercise.ui.metrics.MetricDetailScreen
 import com.personal.exercise.ui.metrics.MetricsScreen
 import com.personal.exercise.ui.plan.PlanScreen
 import com.personal.exercise.ui.records.RecordsScreen
-import com.personal.exercise.ui.settings.ActivitiesScreen
 import com.personal.exercise.ui.settings.SettingsScreen
 import com.personal.exercise.ui.theme.CardBg
 import com.personal.exercise.ui.theme.Green
@@ -151,13 +150,6 @@ fun ExerciseApp(repo: ExerciseRepository) {
             composable("settings") {
                 SettingsScreen(
                     vm = viewModel(factory = VmFactory(repo)),
-                    onManageActivities = { nav.navigate("activities") },
-                )
-            }
-            composable("activities") {
-                ActivitiesScreen(
-                    vm = viewModel(factory = VmFactory(repo)),
-                    onBack = { nav.popBackStack() },
                 )
             }
             composable("workout/new") {

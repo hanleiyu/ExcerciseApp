@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.personal.exercise.data.ExerciseRepository
-import com.personal.exercise.domain.ActivityItem
 import com.personal.exercise.domain.AppSettings
 import com.personal.exercise.domain.Category
 import com.personal.exercise.domain.Intensity
@@ -166,7 +165,7 @@ class WorkoutEditorViewModel(
     private val repo: ExerciseRepository,
     private val workoutId: Long?,
 ) : ViewModel() {
-    val activities: StateFlow<List<ActivityItem>> = repo.activities.stateIn(
+    val workouts: StateFlow<List<Workout>> = repo.workouts.stateIn(
         viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList(),
     )
     val settings: StateFlow<AppSettings> = repo.settings.stateIn(
@@ -195,10 +194,6 @@ class SettingsViewModel(private val repo: ExerciseRepository) : ViewModel() {
     val settings: StateFlow<AppSettings> = repo.settings.stateIn(
         viewModelScope, SharingStarted.WhileSubscribed(5_000), AppSettings(),
     )
-    val activities: StateFlow<List<ActivityItem>> = repo.activities.stateIn(
-        viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList(),
-    )
-
     fun setMode(mode: TargetMode) = viewModelScope.launch { repo.setTargetMode(mode) }
     fun setFixedAerobic(v: Int) = viewModelScope.launch { repo.updateSettings { it.copy(fixedAerobic = v.coerceIn(5, 600)) } }
     fun setFixedStrength(v: Int) = viewModelScope.launch { repo.updateSettings { it.copy(fixedStrength = v.coerceIn(5, 600)) } }
@@ -212,9 +207,6 @@ class SettingsViewModel(private val repo: ExerciseRepository) : ViewModel() {
     fun setStageStrength(stage: Stage, v: Int) = viewModelScope.launch {
         repo.updateSettings { it.copy(stageTargets = it.stageTargets.withStrength(stage, v.coerceIn(5, 600))) }
     }
-    fun addActivity(category: Category, name: String) = viewModelScope.launch { repo.addCustomActivity(category, name) }
-    fun rename(id: Long, name: String) = viewModelScope.launch { repo.renameActivity(id, name) }
-    fun hide(id: Long, hidden: Boolean) = viewModelScope.launch { repo.setActivityHidden(id, hidden) }
     suspend fun exportJson() = repo.exportJson()
     suspend fun restore(text: String) = repo.restoreJson(text)
 }
