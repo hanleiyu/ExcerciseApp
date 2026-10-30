@@ -60,7 +60,6 @@ fun RecordsScreen(
     val workouts by vm.workouts.collectAsStateWithLifecycle()
     val month by vm.month.collectAsStateWithLifecycle()
     val selected by vm.selected.collectAsStateWithLifecycle()
-    val today = LocalDate.now()
     val monthStats = WeekCalculator.statsForMonth(workouts, month)
     val monthEarn = WeekCalculator.monthEarnYuan(workouts, month)
     val totalEarn = WeekCalculator.totalEarnYuan(workouts)
@@ -87,7 +86,6 @@ fun RecordsScreen(
                 Spacer(Modifier.height(6.dp))
                 MonthGrid(
                     month = month,
-                    today = today,
                     selected = selected,
                     dotsByDay = dotsByDay,
                     onSelect = vm::select,
@@ -192,7 +190,6 @@ private fun WeekdayRow() {
 @Composable
 private fun MonthGrid(
     month: YearMonth,
-    today: LocalDate,
     selected: LocalDate,
     dotsByDay: Map<LocalDate, Set<Category>>,
     onSelect: (LocalDate) -> Unit,
@@ -210,7 +207,6 @@ private fun MonthGrid(
                         if (YearMonth.from(date) == month) {
                             DayCell(
                                 date = date,
-                                today = today,
                                 selected = selected,
                                 dots = dotsByDay[date].orEmpty(),
                                 onSelect = onSelect,
@@ -228,12 +224,11 @@ private fun MonthGrid(
 @Composable
 private fun DayCell(
     date: LocalDate,
-    today: LocalDate,
     selected: LocalDate,
     dots: Set<Category>,
     onSelect: (LocalDate) -> Unit,
 ) {
-    val focus = date == selected || date == today
+    val selectedDay = date == selected
     val period = Category.PERIOD in dots
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -253,7 +248,7 @@ private fun DayCell(
                         .border(1.5.dp, Danger, CircleShape),
                 )
             }
-            if (focus) {
+            if (selectedDay) {
                 Box(
                     Modifier
                         .size(if (period) 26.dp else 34.dp)
@@ -264,7 +259,7 @@ private fun DayCell(
                 date.dayOfMonth.toString(),
                 color = TextMain,
                 fontSize = 15.sp,
-                fontWeight = if (date == selected) FontWeight.SemiBold else FontWeight.Normal,
+                fontWeight = if (selectedDay) FontWeight.SemiBold else FontWeight.Normal,
             )
         }
         Spacer(Modifier.height(4.dp))
