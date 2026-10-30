@@ -82,19 +82,14 @@ fun SettingsScreen(
     var edit by remember { mutableStateOf<NumberEdit?>(null) }
     val targets = settings.stageTargets
 
-    val createCsv = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/csv")) { uri ->
-        if (uri != null) scope.launch {
-            writeText(context, uri, vm.exportCsv())
-            snack.showSnackbar("CSV 已导出")
-        }
-    }
-    val createJson = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+    // Manual vs future nightly auto backup use different default names so they never overwrite each other.
+    val createBackup = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/plain")) { uri ->
         if (uri != null) scope.launch {
             writeText(context, uri, vm.exportJson())
-            snack.showSnackbar("备份已导出")
+            snack.showSnackbar("已备份")
         }
     }
-    val openJson = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+    val openBackup = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         pendingRestore = uri
         if (uri != null) showRestore = true
     }
@@ -201,9 +196,12 @@ fun SettingsScreen(
             AppCard {
                 Text("数据", color = TextMain, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
                 SettingsRow("管理运动项目", "") { onManageActivities() }
-                SettingsRow("导出CSV", "") { createCsv.launch("exercise-workouts.csv") }
-                SettingsRow("备份 JSON", "") { createJson.launch("exercise-backup.json") }
-                SettingsRow("恢复 JSON", "") { openJson.launch(arrayOf("application/json", "text/*")) }
+                SettingsRow("备份", "") { createBackup.launch(MANUAL_BACKUP_FILENAME) }
+                SettingsRow("恢复", "") {
+                    openBackup.launch(
+                        arrayOf("text/plain", "text/*", "application/json", "*/*"),
+                    )
+                }
             }
         }
         SnackbarHost(snack, Modifier.align(Alignment.BottomCenter).padding(16.dp))
@@ -534,6 +532,13 @@ private fun currentStageLabel(stage: Stage): String = when (stage) {
     Stage.STAGE_3 -> "当前阶段3"
     Stage.MAINTAIN -> "当前维持期"
 }
+
+/** Default name for user-triggered backup (CreateDocument). */
+private const val MANUAL_BACKUP_FILENAME = "运动-备份.txt"
+
+/** Reserved for a future nightly auto-backup file; must stay different from [MANUAL_BACKUP_FILENAME]. */
+@Suppress("unused")
+private const val AUTO_BACKUP_FILENAME = "运动-自动备份.txt"
 
 private fun writeText(context: android.content.Context, uri: Uri, text: String) {
     context.contentResolver.openOutputStream(uri)?.use { it.write(text.toByteArray(Charsets.UTF_8)) }
