@@ -17,10 +17,20 @@ android {
         versionName = "1.2.1"
     }
 
+    signingConfigs {
+        create("fixedDebug") {
+            storeFile = file("keystore/debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+
     buildTypes {
         debug {
             isMinifyEnabled = false
             applicationIdSuffix = ""
+            signingConfig = signingConfigs.getByName("fixedDebug")
         }
         release {
             isMinifyEnabled = false
@@ -28,6 +38,9 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+            // No dedicated release keystore yet; use the fixed debug key so
+            // assembleRelease stays installable over the same package.
+            signingConfig = signingConfigs.getByName("fixedDebug")
         }
     }
 
