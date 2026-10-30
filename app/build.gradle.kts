@@ -13,8 +13,8 @@ android {
         applicationId = "com.personal.exercise"
         minSdk = 26
         targetSdk = 35
-        versionCode = 9
-        versionName = "1.3.3"
+        versionCode = 10
+        versionName = "1.3.4"
     }
 
     signingConfigs {
@@ -55,6 +55,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     packaging {

@@ -49,6 +49,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.personal.exercise.BuildConfig
 import com.personal.exercise.domain.Stage
 import com.personal.exercise.domain.TargetMode
 import com.personal.exercise.ui.SettingsViewModel
@@ -62,6 +63,7 @@ import com.personal.exercise.ui.theme.Green
 import com.personal.exercise.ui.theme.ScreenPad
 import com.personal.exercise.ui.theme.StrengthBlue
 import com.personal.exercise.ui.theme.TextMain
+import com.personal.exercise.ui.theme.TextMuted
 import kotlinx.coroutines.launch
 import kotlin.math.max
 import kotlin.math.min
@@ -198,6 +200,12 @@ fun SettingsScreen(
                         arrayOf("text/plain", "text/*", "application/json", "*/*"),
                     )
                 }
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    "版本 ${BuildConfig.VERSION_NAME}",
+                    color = TextMuted,
+                    fontSize = 13.sp,
+                )
             }
         }
         SnackbarHost(snack, Modifier.align(Alignment.BottomCenter).padding(16.dp))
