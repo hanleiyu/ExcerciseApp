@@ -216,7 +216,6 @@ class SettingsViewModel(private val repo: ExerciseRepository) : ViewModel() {
     fun rename(id: Long, name: String) = viewModelScope.launch { repo.renameActivity(id, name) }
     fun hide(id: Long, hidden: Boolean) = viewModelScope.launch { repo.setActivityHidden(id, hidden) }
     suspend fun exportJson() = repo.exportJson()
-    suspend fun exportCsv() = repo.exportCsv()
     suspend fun restore(text: String) = repo.restoreJson(text)
 }
 
