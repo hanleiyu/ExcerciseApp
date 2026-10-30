@@ -28,7 +28,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -50,7 +49,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.personal.exercise.domain.Category
 import com.personal.exercise.domain.Stage
 import com.personal.exercise.domain.TargetMode
 import com.personal.exercise.ui.SettingsViewModel
@@ -71,7 +69,6 @@ import kotlin.math.min
 @Composable
 fun SettingsScreen(
     vm: SettingsViewModel,
-    onManageActivities: () -> Unit,
 ) {
     val settings by vm.settings.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -195,7 +192,6 @@ fun SettingsScreen(
             Spacer(Modifier.height(12.dp))
             AppCard {
                 Text("数据", color = TextMain, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-                SettingsRow("管理运动项目", "") { onManageActivities() }
                 SettingsRow("备份", "") { createBackup.launch(MANUAL_BACKUP_FILENAME) }
                 SettingsRow("恢复", "") {
                     openBackup.launch(
@@ -236,123 +232,6 @@ fun SettingsScreen(
                 current.onSave(value)
                 edit = null
             },
-        )
-    }
-}
-
-@Composable
-fun ActivitiesScreen(
-    vm: SettingsViewModel,
-    onBack: () -> Unit,
-) {
-    val activities by vm.activities.collectAsStateWithLifecycle()
-    var category by remember { mutableStateOf(Category.AEROBIC) }
-    var topTab by remember { mutableStateOf("有氧") }
-    var showAdd by remember { mutableStateOf(false) }
-    var renameId by remember { mutableStateOf<Long?>(null) }
-    var renameText by remember { mutableStateOf("") }
-    val sportCategories = listOf(Category.AEROBIC, Category.STRENGTH, Category.BALANCE)
-    val otherCategories = listOf(Category.PERIOD, Category.BOWEL)
-    val visible = activities.filter { it.category == category }
-    val topOptions = listOf("有氧", "力量", "平衡", "其他")
-
-    Column(
-        Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = ScreenPad)
-            .padding(top = 16.dp, bottom = 28.dp),
-    ) {
-        ScreenHeader("管理运动项目", onBack = onBack)
-        Spacer(Modifier.height(16.dp))
-        AppCard {
-            Segmented(
-                options = topOptions,
-                selected = topTab,
-                onSelect = { label ->
-                    if (label != topTab) {
-                        topTab = label
-                        category = if (label == "其他") Category.PERIOD
-                        else sportCategories.first { it.label == label }
-                    }
-                },
-            )
-            if (topTab == "其他") {
-                Spacer(Modifier.height(10.dp))
-                Segmented(
-                    options = otherCategories.map { it.label },
-                    selected = category.label,
-                    onSelect = { label ->
-                        category = otherCategories.first { it.label == label }
-                    },
-                )
-            }
-        }
-        Spacer(Modifier.height(12.dp))
-        AppCard {
-            if (category.isMarkerOnly) {
-                Text(
-                    "「${category.label}」为固定标记项，不可自定义或隐藏。",
-                    color = TextMain,
-                    fontSize = 14.sp,
-                )
-                Spacer(Modifier.height(8.dp))
-            }
-            visible.forEach { item ->
-                SettingsRow(
-                    label = buildString {
-                        append(item.name)
-                        if (item.isPreset) append("  · 预设")
-                        if (item.hidden) append("  · 已隐藏")
-                    },
-                    value = if (item.isPreset || category.isMarkerOnly) "" else if (item.hidden) "显示 ›" else "隐藏 ›",
-                    onClick = if (item.isPreset || category.isMarkerOnly) null else {
-                        { vm.hide(item.id, !item.hidden) }
-                    },
-                )
-                if (!item.isPreset && !category.isMarkerOnly) {
-                    TextButton(onClick = {
-                        renameId = item.id
-                        renameText = item.name
-                    }) { Text("改名") }
-                }
-            }
-            if (!category.isMarkerOnly) {
-                TextButton(onClick = { showAdd = true }) { Text("+ 新增自定义") }
-            }
-        }
-    }
-
-    if (showAdd) {
-        var name by remember { mutableStateOf("") }
-        AlertDialog(
-            onDismissRequest = { showAdd = false },
-            title = { Text("新增 ${category.label} 项目") },
-            text = { OutlinedTextField(name, { name = it }, label = { Text("名称") }, singleLine = true) },
-            confirmButton = {
-                TextButton(onClick = {
-                    if (name.isNotBlank()) {
-                        vm.addActivity(category, name)
-                        showAdd = false
-                    }
-                }) { Text("添加") }
-            },
-            dismissButton = { TextButton(onClick = { showAdd = false }) { Text("取消") } },
-        )
-    }
-    if (renameId != null) {
-        AlertDialog(
-            onDismissRequest = { renameId = null },
-            title = { Text("改名") },
-            text = { OutlinedTextField(renameText, { renameText = it }, singleLine = true) },
-            confirmButton = {
-                TextButton(onClick = {
-                    val id = renameId
-                    if (id != null && renameText.isNotBlank()) vm.rename(id, renameText)
-                    renameId = null
-                }) { Text("保存") }
-            },
-            dismissButton = { TextButton(onClick = { renameId = null }) { Text("取消") } },
         )
     }
 }

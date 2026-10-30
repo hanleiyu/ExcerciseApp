@@ -207,14 +207,6 @@ fun formatSigned(value: Double, decimals: Int = 0): String {
 }
 
 object Presets {
-    val activities: Map<Category, List<String>> = mapOf(
-        Category.AEROBIC to listOf("快跑", "慢跑", "骑车", "游泳", "跳绳", "羽毛球", "爬楼梯"),
-        Category.STRENGTH to listOf("全身力量", "深蹲", "俯卧撑", "平板支撑", "臀桥", "弓步蹲", "弹力带划船"),
-        Category.BALANCE to listOf("瑜伽", "太极", "拉伸", "普拉提"),
-        Category.PERIOD to listOf("经期"),
-        Category.BOWEL to listOf("排便"),
-    )
-
     val durationChips: Map<Category, List<Int>> = mapOf(
         Category.AEROBIC to listOf(15, 20, 30, 45, 60),
         Category.STRENGTH to listOf(15, 20, 25, 30, 40),

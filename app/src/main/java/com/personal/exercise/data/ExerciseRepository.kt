@@ -27,30 +27,9 @@ class ExerciseRepository(private val db: AppDatabase) {
         if (db.settings().get() == null) {
             db.settings().upsert(AppSettings().toEntity())
         }
-        ensurePresetActivities()
         if (db.metrics().count() == 0) {
             db.metrics().insertAll(Presets.metrics.map { it.toEntity() })
         }
-    }
-
-    /** 新装全量种子；已装用户只补缺失预设（含经期）。 */
-    private suspend fun ensurePresetActivities() {
-        val existing = db.activities().getAll().map { it.category to it.name }.toSet()
-        val missing = Presets.activities.flatMap { (cat, names) ->
-            names.mapNotNull { name ->
-                if ((cat.name to name) in existing) {
-                    null
-                } else {
-                    ActivityEntity(
-                        category = cat.name,
-                        name = name,
-                        isPreset = true,
-                        hidden = false,
-                    )
-                }
-            }
-        }
-        if (missing.isNotEmpty()) db.activities().insertAll(missing)
     }
 
     suspend fun settingsOnce(): AppSettings = db.settings().get()?.toDomain() ?: AppSettings()

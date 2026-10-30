@@ -70,7 +70,7 @@ fun WorkoutEditorScreen(
     initialDate: LocalDate? = null,
     onDone: () -> Unit,
 ) {
-    val activities by vm.activities.collectAsStateWithLifecycle()
+    val workouts by vm.workouts.collectAsStateWithLifecycle()
     val existing by vm.existing.collectAsStateWithLifecycle()
 
     var category by remember { mutableStateOf(Category.AEROBIC) }
@@ -123,7 +123,19 @@ fun WorkoutEditorScreen(
         hydrated = true
     }
 
-    val names = activities.filter { it.category == category && !it.hidden }.map { it.name }
+    // Used names for this category from history (recent first); keep current selection visible if new custom.
+    val usedNames = remember(workouts, category) {
+        workouts.asSequence()
+            .filter { it.category == category }
+            .map { it.activityName.trim() }
+            .filter { it.isNotEmpty() }
+            .distinct()
+            .toList()
+    }
+    val names = remember(usedNames, activity) {
+        val sel = activity?.trim().orEmpty()
+        if (sel.isNotEmpty() && sel !in usedNames) listOf(sel) + usedNames else usedNames
+    }
     val canSave = when (category) {
         Category.PERIOD, Category.BOWEL -> true
         Category.AEROBIC -> !activity.isNullOrBlank() && minutes > 0 && intensity != null
