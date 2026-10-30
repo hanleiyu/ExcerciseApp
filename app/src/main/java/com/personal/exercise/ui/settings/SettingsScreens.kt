@@ -249,10 +249,14 @@ fun ActivitiesScreen(
 ) {
     val activities by vm.activities.collectAsStateWithLifecycle()
     var category by remember { mutableStateOf(Category.AEROBIC) }
+    var topTab by remember { mutableStateOf("有氧") }
     var showAdd by remember { mutableStateOf(false) }
     var renameId by remember { mutableStateOf<Long?>(null) }
     var renameText by remember { mutableStateOf("") }
+    val sportCategories = listOf(Category.AEROBIC, Category.STRENGTH, Category.BALANCE)
+    val otherCategories = listOf(Category.PERIOD, Category.BOWEL)
     val visible = activities.filter { it.category == category }
+    val topOptions = listOf("有氧", "力量", "平衡", "其他")
 
     Column(
         Modifier
@@ -265,13 +269,37 @@ fun ActivitiesScreen(
         Spacer(Modifier.height(16.dp))
         AppCard {
             Segmented(
-                options = Category.entries.map { it.label },
-                selected = category.label,
-                onSelect = { label -> category = Category.entries.first { it.label == label } },
+                options = topOptions,
+                selected = topTab,
+                onSelect = { label ->
+                    if (label != topTab) {
+                        topTab = label
+                        category = if (label == "其他") Category.PERIOD
+                        else sportCategories.first { it.label == label }
+                    }
+                },
             )
+            if (topTab == "其他") {
+                Spacer(Modifier.height(10.dp))
+                Segmented(
+                    options = otherCategories.map { it.label },
+                    selected = category.label,
+                    onSelect = { label ->
+                        category = otherCategories.first { it.label == label }
+                    },
+                )
+            }
         }
         Spacer(Modifier.height(12.dp))
         AppCard {
+            if (category.isMarkerOnly) {
+                Text(
+                    "「${category.label}」为固定标记项，不可自定义或隐藏。",
+                    color = TextMain,
+                    fontSize = 14.sp,
+                )
+                Spacer(Modifier.height(8.dp))
+            }
             visible.forEach { item ->
                 SettingsRow(
                     label = buildString {
@@ -279,19 +307,19 @@ fun ActivitiesScreen(
                         if (item.isPreset) append("  · 预设")
                         if (item.hidden) append("  · 已隐藏")
                     },
-                    value = if (item.isPreset) "" else if (item.hidden) "显示 ›" else "隐藏 ›",
-                    onClick = if (item.isPreset) null else {
+                    value = if (item.isPreset || category.isMarkerOnly) "" else if (item.hidden) "显示 ›" else "隐藏 ›",
+                    onClick = if (item.isPreset || category.isMarkerOnly) null else {
                         { vm.hide(item.id, !item.hidden) }
                     },
                 )
-                if (!item.isPreset) {
+                if (!item.isPreset && !category.isMarkerOnly) {
                     TextButton(onClick = {
                         renameId = item.id
                         renameText = item.name
                     }) { Text("改名") }
                 }
             }
-            if (category != Category.PERIOD) {
+            if (!category.isMarkerOnly) {
                 TextButton(onClick = { showAdd = true }) { Text("+ 新增自定义") }
             }
         }
