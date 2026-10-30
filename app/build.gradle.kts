@@ -13,14 +13,24 @@ android {
         applicationId = "com.personal.exercise"
         minSdk = 26
         targetSdk = 35
-        versionCode = 5
-        versionName = "1.2.1"
+        versionCode = 10
+        versionName = "1.3.4"
+    }
+
+    signingConfigs {
+        create("fixedDebug") {
+            storeFile = file("keystore/debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
     }
 
     buildTypes {
         debug {
             isMinifyEnabled = false
             applicationIdSuffix = ""
+            signingConfig = signingConfigs.getByName("fixedDebug")
         }
         release {
             isMinifyEnabled = false
@@ -28,6 +38,9 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+            // No dedicated release keystore yet; use the fixed debug key so
+            // assembleRelease stays installable over the same package.
+            signingConfig = signingConfigs.getByName("fixedDebug")
         }
     }
 
@@ -42,6 +55,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     packaging {
