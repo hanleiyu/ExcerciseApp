@@ -70,10 +70,11 @@ fun WorkoutEditorScreen(
     initialDate: LocalDate? = null,
     onDone: () -> Unit,
 ) {
-    val activities by vm.activities.collectAsStateWithLifecycle()
+    val workouts by vm.workouts.collectAsStateWithLifecycle()
     val existing by vm.existing.collectAsStateWithLifecycle()
 
     var category by remember { mutableStateOf(Category.AEROBIC) }
+    var topTab by remember { mutableStateOf("有氧") }
     var activity by remember { mutableStateOf<String?>(null) }
     var minutes by remember { mutableIntStateOf(30) }
     var intensity by remember { mutableStateOf<Intensity?>(Intensity.MID) }
@@ -87,6 +88,20 @@ fun WorkoutEditorScreen(
     var showNote by remember { mutableStateOf(false) }
     var hydrated by remember { mutableStateOf(false) }
 
+    fun applyMarker(cat: Category) {
+        category = cat
+        activity = cat.label
+        minutes = 0
+        intensity = null
+    }
+
+    fun applySport(cat: Category) {
+        category = cat
+        activity = null
+        minutes = Presets.durationChips[cat]?.getOrNull(2) ?: 30
+        intensity = if (cat == Category.AEROBIC) Intensity.MID else null
+    }
+
     LaunchedEffect(existing) {
         val w = existing ?: return@LaunchedEffect
         if (hydrated) return@LaunchedEffect
@@ -94,15 +109,40 @@ fun WorkoutEditorScreen(
         activity = w.activityName
         minutes = w.durationMinutes
         intensity = w.intensity ?: if (w.category == Category.AEROBIC) Intensity.MID else null
+        if (w.category.isMarkerOnly) {
+            topTab = "其他"
+            activity = w.category.label
+            minutes = 0
+            intensity = null
+        } else {
+            topTab = w.category.label
+        }
         date = w.date
         note = w.note.orEmpty()
         isFree = w.isFree
         hydrated = true
     }
 
-    val names = activities.filter { it.category == category && !it.hidden }.map { it.name }
-    val canSave = !activity.isNullOrBlank() && minutes > 0 &&
-        (category != Category.AEROBIC || intensity != null)
+    // Used names for this category from history (recent first); keep current selection visible if new custom.
+    val usedNames = remember(workouts, category) {
+        workouts.asSequence()
+            .filter { it.category == category }
+            .map { it.activityName.trim() }
+            .filter { it.isNotEmpty() }
+            .distinct()
+            .toList()
+    }
+    val names = remember(usedNames, activity) {
+        val sel = activity?.trim().orEmpty()
+        if (sel.isNotEmpty() && sel !in usedNames) listOf(sel) + usedNames else usedNames
+    }
+    val canSave = when (category) {
+        Category.PERIOD, Category.BOWEL -> true
+        Category.AEROBIC -> !activity.isNullOrBlank() && minutes > 0 && intensity != null
+        Category.STRENGTH, Category.BALANCE -> !activity.isNullOrBlank() && minutes > 0
+    }
+    val topOptions = listOf("有氧", "力量", "平衡", "其他")
+    val otherOptions = listOf(Category.PERIOD, Category.BOWEL)
 
     Column(
         Modifier
@@ -122,42 +162,65 @@ fun WorkoutEditorScreen(
             Text("类别", color = TextMuted, fontSize = 13.sp)
             Spacer(Modifier.height(10.dp))
             Segmented(
-                options = Category.entries.map { it.label },
-                selected = category.label,
+                options = topOptions,
+                selected = topTab,
                 onSelect = { label ->
-                    val next = Category.entries.first { it.label == label }
-                    if (next != category) {
-                        category = next
-                        activity = null
-                        minutes = Presets.durationChips[next]?.getOrNull(2) ?: 30
-                        intensity = if (next == Category.AEROBIC) Intensity.MID else null
+                    if (label != topTab) {
+                        topTab = label
+                        if (label == "其他") {
+                            applyMarker(Category.PERIOD)
+                        } else {
+                            applySport(Category.entries.first { it.label == label })
+                        }
                     }
                 },
             )
+            if (topTab == "其他") {
+                Spacer(Modifier.height(10.dp))
+                Segmented(
+                    options = otherOptions.map { it.label },
+                    selected = category.label,
+                    onSelect = { label ->
+                        val next = otherOptions.first { it.label == label }
+                        if (next != category) applyMarker(next)
+                    },
+                )
+            }
         }
 
-        Spacer(Modifier.height(12.dp))
-        AppCard {
-            Text("项目", color = TextMuted, fontSize = 13.sp)
-            Spacer(Modifier.height(10.dp))
-            ChoiceChipRow(
-                options = names + "+自定义",
-                selected = activity,
-                onSelect = { chosen ->
-                    if (chosen == "+自定义") showCustom = true else activity = chosen
-                },
-            )
-        }
+        if (!category.isMarkerOnly) {
+            Spacer(Modifier.height(12.dp))
+            AppCard {
+                Text("项目", color = TextMuted, fontSize = 13.sp)
+                Spacer(Modifier.height(10.dp))
+                ChoiceChipRow(
+                    options = names + "+自定义",
+                    selected = activity,
+                    onSelect = { chosen ->
+                        if (chosen == "+自定义") showCustom = true else activity = chosen
+                    },
+                )
+            }
 
-        Spacer(Modifier.height(12.dp))
-        AppCard {
-            Text("时长", color = TextMuted, fontSize = 13.sp)
-            Spacer(Modifier.height(10.dp))
-            DurationStepper(
-                value = minutes,
-                onChange = { minutes = it },
-                chips = Presets.durationChips[category] ?: emptyList(),
-            )
+            Spacer(Modifier.height(12.dp))
+            AppCard {
+                Text("时长", color = TextMuted, fontSize = 13.sp)
+                Spacer(Modifier.height(10.dp))
+                DurationStepper(
+                    value = minutes,
+                    onChange = { minutes = it },
+                    chips = Presets.durationChips[category] ?: emptyList(),
+                )
+            }
+        } else {
+            Spacer(Modifier.height(12.dp))
+            AppCard {
+                Text(
+                    "项目固定为「${category.label}」，选日期即可保存，不必填时长或强度，不计入运动统计。",
+                    color = TextMuted,
+                    fontSize = 13.sp,
+                )
+            }
         }
 
         if (category == Category.AEROBIC) {
@@ -240,8 +303,8 @@ fun WorkoutEditorScreen(
                 Workout(
                     id = existing?.id ?: 0,
                     category = category,
-                    activityName = activity.orEmpty(),
-                    durationMinutes = minutes,
+                    activityName = if (category.isMarkerOnly) category.label else activity.orEmpty(),
+                    durationMinutes = if (category.isMarkerOnly) 0 else minutes,
                     intensity = if (category == Category.AEROBIC) intensity else null,
                     date = date,
                     note = note.ifBlank { null },

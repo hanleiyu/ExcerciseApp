@@ -27,19 +27,6 @@ class ExerciseRepository(private val db: AppDatabase) {
         if (db.settings().get() == null) {
             db.settings().upsert(AppSettings().toEntity())
         }
-        if (db.activities().count() == 0) {
-            val seeded = Presets.activities.flatMap { (cat, names) ->
-                names.map { name ->
-                    ActivityEntity(
-                        category = cat.name,
-                        name = name,
-                        isPreset = true,
-                        hidden = false,
-                    )
-                }
-            }
-            db.activities().insertAll(seeded)
-        }
         if (db.metrics().count() == 0) {
             db.metrics().insertAll(Presets.metrics.map { it.toEntity() })
         }

@@ -28,7 +28,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -50,7 +49,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.personal.exercise.domain.Category
+import com.personal.exercise.BuildConfig
 import com.personal.exercise.domain.Stage
 import com.personal.exercise.domain.TargetMode
 import com.personal.exercise.ui.SettingsViewModel
@@ -64,6 +63,7 @@ import com.personal.exercise.ui.theme.Green
 import com.personal.exercise.ui.theme.ScreenPad
 import com.personal.exercise.ui.theme.StrengthBlue
 import com.personal.exercise.ui.theme.TextMain
+import com.personal.exercise.ui.theme.TextMuted
 import kotlinx.coroutines.launch
 import kotlin.math.max
 import kotlin.math.min
@@ -71,7 +71,6 @@ import kotlin.math.min
 @Composable
 fun SettingsScreen(
     vm: SettingsViewModel,
-    onManageActivities: () -> Unit,
 ) {
     val settings by vm.settings.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -82,19 +81,14 @@ fun SettingsScreen(
     var edit by remember { mutableStateOf<NumberEdit?>(null) }
     val targets = settings.stageTargets
 
-    val createCsv = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/csv")) { uri ->
-        if (uri != null) scope.launch {
-            writeText(context, uri, vm.exportCsv())
-            snack.showSnackbar("CSV 已导出")
-        }
-    }
-    val createJson = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+    // Manual vs future nightly auto backup use different default names so they never overwrite each other.
+    val createBackup = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/plain")) { uri ->
         if (uri != null) scope.launch {
             writeText(context, uri, vm.exportJson())
-            snack.showSnackbar("备份已导出")
+            snack.showSnackbar("已备份")
         }
     }
-    val openJson = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+    val openBackup = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         pendingRestore = uri
         if (uri != null) showRestore = true
     }
@@ -200,10 +194,18 @@ fun SettingsScreen(
             Spacer(Modifier.height(12.dp))
             AppCard {
                 Text("数据", color = TextMain, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-                SettingsRow("管理运动项目", "") { onManageActivities() }
-                SettingsRow("导出CSV", "") { createCsv.launch("exercise-workouts.csv") }
-                SettingsRow("备份 JSON", "") { createJson.launch("exercise-backup.json") }
-                SettingsRow("恢复 JSON", "") { openJson.launch(arrayOf("application/json", "text/*")) }
+                SettingsRow("备份", "") { createBackup.launch(MANUAL_BACKUP_FILENAME) }
+                SettingsRow("恢复", "") {
+                    openBackup.launch(
+                        arrayOf("text/plain", "text/*", "application/json", "*/*"),
+                    )
+                }
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    "版本 ${BuildConfig.VERSION_NAME}",
+                    color = TextMuted,
+                    fontSize = 13.sp,
+                )
             }
         }
         SnackbarHost(snack, Modifier.align(Alignment.BottomCenter).padding(16.dp))
@@ -238,93 +240,6 @@ fun SettingsScreen(
                 current.onSave(value)
                 edit = null
             },
-        )
-    }
-}
-
-@Composable
-fun ActivitiesScreen(
-    vm: SettingsViewModel,
-    onBack: () -> Unit,
-) {
-    val activities by vm.activities.collectAsStateWithLifecycle()
-    var category by remember { mutableStateOf(Category.AEROBIC) }
-    var showAdd by remember { mutableStateOf(false) }
-    var renameId by remember { mutableStateOf<Long?>(null) }
-    var renameText by remember { mutableStateOf("") }
-    val visible = activities.filter { it.category == category }
-
-    Column(
-        Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = ScreenPad)
-            .padding(top = 16.dp, bottom = 28.dp),
-    ) {
-        ScreenHeader("管理运动项目", onBack = onBack)
-        Spacer(Modifier.height(16.dp))
-        AppCard {
-            Segmented(
-                options = Category.entries.map { it.label },
-                selected = category.label,
-                onSelect = { label -> category = Category.entries.first { it.label == label } },
-            )
-        }
-        Spacer(Modifier.height(12.dp))
-        AppCard {
-            visible.forEach { item ->
-                SettingsRow(
-                    label = buildString {
-                        append(item.name)
-                        if (item.isPreset) append("  · 预设")
-                        if (item.hidden) append("  · 已隐藏")
-                    },
-                    value = if (item.isPreset) "" else if (item.hidden) "显示 ›" else "隐藏 ›",
-                    onClick = if (item.isPreset) null else {
-                        { vm.hide(item.id, !item.hidden) }
-                    },
-                )
-                if (!item.isPreset) {
-                    TextButton(onClick = {
-                        renameId = item.id
-                        renameText = item.name
-                    }) { Text("改名") }
-                }
-            }
-            TextButton(onClick = { showAdd = true }) { Text("+ 新增自定义") }
-        }
-    }
-
-    if (showAdd) {
-        var name by remember { mutableStateOf("") }
-        AlertDialog(
-            onDismissRequest = { showAdd = false },
-            title = { Text("新增 ${category.label} 项目") },
-            text = { OutlinedTextField(name, { name = it }, label = { Text("名称") }, singleLine = true) },
-            confirmButton = {
-                TextButton(onClick = {
-                    if (name.isNotBlank()) {
-                        vm.addActivity(category, name)
-                        showAdd = false
-                    }
-                }) { Text("添加") }
-            },
-            dismissButton = { TextButton(onClick = { showAdd = false }) { Text("取消") } },
-        )
-    }
-    if (renameId != null) {
-        AlertDialog(
-            onDismissRequest = { renameId = null },
-            title = { Text("改名") },
-            text = { OutlinedTextField(renameText, { renameText = it }, singleLine = true) },
-            confirmButton = {
-                TextButton(onClick = {
-                    val id = renameId
-                    if (id != null && renameText.isNotBlank()) vm.rename(id, renameText)
-                    renameId = null
-                }) { Text("保存") }
-            },
-            dismissButton = { TextButton(onClick = { renameId = null }) { Text("取消") } },
         )
     }
 }
@@ -504,6 +419,13 @@ private fun currentStageLabel(stage: Stage): String = when (stage) {
     Stage.STAGE_3 -> "当前阶段3"
     Stage.MAINTAIN -> "当前维持期"
 }
+
+/** Default name for user-triggered backup (CreateDocument). */
+private const val MANUAL_BACKUP_FILENAME = "运动-备份.txt"
+
+/** Reserved for a future nightly auto-backup file; must stay different from [MANUAL_BACKUP_FILENAME]. */
+@Suppress("unused")
+private const val AUTO_BACKUP_FILENAME = "运动-自动备份.txt"
 
 private fun writeText(context: android.content.Context, uri: Uri, text: String) {
     context.contentResolver.openOutputStream(uri)?.use { it.write(text.toByteArray(Charsets.UTF_8)) }

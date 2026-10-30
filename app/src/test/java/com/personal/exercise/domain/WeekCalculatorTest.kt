@@ -164,6 +164,8 @@ class WeekCalculatorTest {
             workout(Category.BALANCE, 20, null, LocalDate.of(2026, 10, 21)),
             workout(Category.AEROBIC, 100, Intensity.MID, LocalDate.of(2026, 9, 30)),
             workout(Category.STRENGTH, 50, null, LocalDate.of(2026, 11, 1)),
+            workout(Category.PERIOD, 0, null, LocalDate.of(2026, 10, 8)),
+            workout(Category.BOWEL, 0, null, LocalDate.of(2026, 10, 9)),
         )
         val stats = WeekCalculator.statsForMonth(workouts, ym)
         assertEquals(2026, stats.year)
@@ -174,16 +176,69 @@ class WeekCalculatorTest {
     }
 
     @Test
+    fun periodDoesNotAffectWeekAggregatesOrTrendTotal() {
+        val aerobic = workout(Category.AEROBIC, 30, Intensity.MID, monday)
+        val period = workout(Category.PERIOD, 0, null, monday)
+        val without = WeekCalculator.statsForWeek(listOf(aerobic), monday)
+        val withPeriod = WeekCalculator.statsForWeek(listOf(aerobic, period), monday)
+        assertEquals(without.aerobicCredited, withPeriod.aerobicCredited)
+        assertEquals(without.strengthMinutes, withPeriod.strengthMinutes)
+        assertEquals(without.balanceSessions, withPeriod.balanceSessions)
+        assertEquals(without.rawAerobic, withPeriod.rawAerobic)
+        assertEquals(without.rawStrength, withPeriod.rawStrength)
+        assertEquals(without.rawBalance, withPeriod.rawBalance)
+        assertEquals(without.rawTotal, withPeriod.rawTotal)
+        assertEquals(30, withPeriod.rawTotal)
+        assertEquals(0, WeekCalculator.statsForWeek(listOf(period), monday).rawTotal)
+    }
+
+    @Test
+    fun periodCreditsZeroAndOmitsMinutesInList() {
+        val period = workout(Category.PERIOD, 0, null, monday)
+        assertEquals(0, period.creditedMinutes)
+        assertEquals("经期", period.listDurationLabel)
+        assertEquals("30分钟", workout(Category.AEROBIC, 30, Intensity.MID, monday).listDurationLabel)
+        assertFalse(Category.PERIOD.countsTowardStats)
+        assertFalse(Category.PERIOD.showsCalendarDot)
+        assertTrue(Category.AEROBIC.countsTowardStats)
+        assertTrue(Category.STRENGTH.showsCalendarDot)
+        assertTrue(Category.BALANCE.showsCalendarDot)
+    }
+
+    @Test
+    fun bowelCreditsZeroAndOmitsMinutesInList() {
+        val bowel = workout(Category.BOWEL, 0, null, monday)
+        assertEquals(0, bowel.creditedMinutes)
+        assertEquals("排便", bowel.listDurationLabel)
+        assertFalse(Category.BOWEL.countsTowardStats)
+        assertFalse(Category.BOWEL.showsCalendarDot)
+        assertTrue(Category.BOWEL.isMarkerOnly)
+        assertTrue(Category.PERIOD.isMarkerOnly)
+    }
+
+    @Test
+    fun bowelDoesNotAffectWeekAggregatesOrTrendTotal() {
+        val aerobic = workout(Category.AEROBIC, 30, Intensity.MID, monday)
+        val bowel = workout(Category.BOWEL, 0, null, monday)
+        val without = WeekCalculator.statsForWeek(listOf(aerobic), monday)
+        val withBowel = WeekCalculator.statsForWeek(listOf(aerobic, bowel), monday)
+        assertEquals(without.rawTotal, withBowel.rawTotal)
+        assertEquals(0, WeekCalculator.statsForWeek(listOf(bowel), monday).rawTotal)
+    }
+
+    @Test
     fun categoriesOnReturnsUniqueCategoriesForDate() {
         val date = LocalDate.of(2026, 10, 13)
         val workouts = listOf(
             workout(Category.STRENGTH, 25, null, date),
             workout(Category.BALANCE, 30, null, date),
             workout(Category.STRENGTH, 10, null, date),
+            workout(Category.PERIOD, 0, null, date),
+            workout(Category.BOWEL, 0, null, date),
             workout(Category.AEROBIC, 20, Intensity.MID, date.plusDays(1)),
         )
         assertEquals(
-            setOf(Category.STRENGTH, Category.BALANCE),
+            setOf(Category.STRENGTH, Category.BALANCE, Category.PERIOD, Category.BOWEL),
             WeekCalculator.categoriesOn(workouts, date),
         )
         assertEquals(setOf(Category.AEROBIC), WeekCalculator.categoriesOn(workouts, date.plusDays(1)))
