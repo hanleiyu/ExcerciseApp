@@ -47,6 +47,7 @@ import com.personal.exercise.ui.theme.BalanceOrange
 import com.personal.exercise.ui.theme.CardBg
 import com.personal.exercise.ui.theme.ChartBlue
 import com.personal.exercise.ui.theme.Danger
+import com.personal.exercise.ui.theme.GooseYellow
 import com.personal.exercise.ui.theme.Green
 import com.personal.exercise.ui.theme.Line
 import com.personal.exercise.ui.theme.ScreenPad
@@ -237,6 +238,8 @@ private fun DayCell(
     val selectedDay = date == selected
     val hasPeriod = Category.PERIOD in dots
     val hasBowel = Category.BOWEL in dots
+    val hasEarlySleep = Category.EARLY_SLEEP in dots
+    val dayNumberColor = if (hasEarlySleep) GooseYellow else TextMain
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
@@ -257,7 +260,7 @@ private fun DayCell(
             }
             Text(
                 date.dayOfMonth.toString(),
-                color = TextMain,
+                color = dayNumberColor,
                 fontSize = 15.sp,
                 fontWeight = if (selectedDay) FontWeight.SemiBold else FontWeight.Normal,
             )
@@ -350,4 +353,5 @@ private fun Category.dotColor(): Color = when (this) {
     Category.BALANCE -> BalanceOrange
     Category.PERIOD -> Danger
     Category.BOWEL -> ChartBlue
+    Category.EARLY_SLEEP -> GooseYellow
 }
