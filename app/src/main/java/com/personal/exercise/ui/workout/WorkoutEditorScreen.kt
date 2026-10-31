@@ -74,7 +74,6 @@ fun WorkoutEditorScreen(
     val existing by vm.existing.collectAsStateWithLifecycle()
 
     var category by remember { mutableStateOf(Category.AEROBIC) }
-    var topTab by remember { mutableStateOf("有氧") }
     var activity by remember { mutableStateOf<String?>(null) }
     var minutes by remember { mutableIntStateOf(30) }
     var intensity by remember { mutableStateOf<Intensity?>(Intensity.MID) }
@@ -110,12 +109,9 @@ fun WorkoutEditorScreen(
         minutes = w.durationMinutes
         intensity = w.intensity ?: if (w.category == Category.AEROBIC) Intensity.MID else null
         if (w.category.isMarkerOnly) {
-            topTab = "其他"
             activity = w.category.label
             minutes = 0
             intensity = null
-        } else {
-            topTab = w.category.label
         }
         date = w.date
         note = w.note.orEmpty()
@@ -141,8 +137,8 @@ fun WorkoutEditorScreen(
         Category.AEROBIC -> !activity.isNullOrBlank() && minutes > 0 && intensity != null
         Category.STRENGTH, Category.BALANCE -> !activity.isNullOrBlank() && minutes > 0
     }
-    val topOptions = listOf("有氧", "力量", "平衡", "其他")
-    val otherOptions = listOf(Category.PERIOD, Category.BOWEL, Category.EARLY_SLEEP)
+    val markerOptions = listOf(Category.EARLY_SLEEP, Category.BOWEL, Category.PERIOD)
+    val sportOptions = listOf(Category.AEROBIC, Category.STRENGTH, Category.BALANCE)
 
     Column(
         Modifier
@@ -162,30 +158,22 @@ fun WorkoutEditorScreen(
             Text("类别", color = TextMuted, fontSize = 13.sp)
             Spacer(Modifier.height(10.dp))
             Segmented(
-                options = topOptions,
-                selected = topTab,
+                options = markerOptions.map { it.label },
+                selected = category.label,
                 onSelect = { label ->
-                    if (label != topTab) {
-                        topTab = label
-                        if (label == "其他") {
-                            applyMarker(Category.PERIOD)
-                        } else {
-                            applySport(Category.entries.first { it.label == label })
-                        }
-                    }
+                    val next = markerOptions.first { it.label == label }
+                    if (next != category) applyMarker(next)
                 },
             )
-            if (topTab == "其他") {
-                Spacer(Modifier.height(10.dp))
-                Segmented(
-                    options = otherOptions.map { it.label },
-                    selected = category.label,
-                    onSelect = { label ->
-                        val next = otherOptions.first { it.label == label }
-                        if (next != category) applyMarker(next)
-                    },
-                )
-            }
+            Spacer(Modifier.height(10.dp))
+            Segmented(
+                options = sportOptions.map { it.label },
+                selected = category.label,
+                onSelect = { label ->
+                    val next = sportOptions.first { it.label == label }
+                    if (next != category) applySport(next)
+                },
+            )
         }
 
         if (!category.isMarkerOnly) {
