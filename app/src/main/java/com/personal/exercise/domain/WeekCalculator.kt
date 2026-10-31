@@ -83,7 +83,7 @@ object WeekCalculator {
                     balanceSessions += 1
                     rawBalance += w.rawMinutes
                 }
-                Category.PERIOD, Category.BOWEL -> Unit
+                Category.PERIOD, Category.BOWEL, Category.EARLY_SLEEP -> Unit
             }
         }
         return WeekStats(

@@ -11,15 +11,16 @@ enum class Category(val label: String) {
     STRENGTH("力量"),
     BALANCE("平衡"),
     PERIOD("经期"),
-    BOWEL("排便");
+    BOWEL("排便"),
+    EARLY_SLEEP("早睡");
 
-    /** 有氧 / 力量 / 平衡计入时长与次数；经期 / 排便只做日历标注。 */
-    val countsTowardStats: Boolean get() = this != PERIOD && this != BOWEL
+    /** 有氧 / 力量 / 平衡计入时长与次数；经期 / 排便 / 早睡只做日历标注。 */
+    val countsTowardStats: Boolean get() = this != PERIOD && this != BOWEL && this != EARLY_SLEEP
 
-    /** 月历日期下彩点只给运动分类；经期红三角、排便蓝勾另绘。 */
+    /** 月历日期下彩点只给运动分类；经期红三角、排便蓝勾另绘；早睡改日期字色。 */
     val showsCalendarDot: Boolean get() = this == AEROBIC || this == STRENGTH || this == BALANCE
 
-    val isMarkerOnly: Boolean get() = this == PERIOD || this == BOWEL
+    val isMarkerOnly: Boolean get() = this == PERIOD || this == BOWEL || this == EARLY_SLEEP
 }
 
 enum class Intensity(
@@ -102,10 +103,10 @@ data class Workout(
         get() = when (category) {
             Category.AEROBIC -> durationMinutes * (intensity?.coefficient ?: 0)
             Category.STRENGTH -> durationMinutes
-            Category.BALANCE, Category.PERIOD, Category.BOWEL -> 0
+            Category.BALANCE, Category.PERIOD, Category.BOWEL, Category.EARLY_SLEEP -> 0
         }
 
-    /** 当日列表右侧：经期 / 排便显示文案，不显示「0分钟」。 */
+    /** 当日列表右侧：经期 / 排便 / 早睡显示文案，不显示「0分钟」。 */
     val listDurationLabel: String
         get() = if (category.isMarkerOnly) category.label else "${durationMinutes}分钟"
 

@@ -227,6 +227,26 @@ class WeekCalculatorTest {
     }
 
     @Test
+    fun earlySleepCreditsZeroAndOmitsMinutesInList() {
+        val early = workout(Category.EARLY_SLEEP, 0, null, monday)
+        assertEquals(0, early.creditedMinutes)
+        assertEquals("早睡", early.listDurationLabel)
+        assertFalse(Category.EARLY_SLEEP.countsTowardStats)
+        assertFalse(Category.EARLY_SLEEP.showsCalendarDot)
+        assertTrue(Category.EARLY_SLEEP.isMarkerOnly)
+    }
+
+    @Test
+    fun earlySleepDoesNotAffectWeekAggregatesOrTrendTotal() {
+        val aerobic = workout(Category.AEROBIC, 30, Intensity.MID, monday)
+        val early = workout(Category.EARLY_SLEEP, 0, null, monday)
+        val without = WeekCalculator.statsForWeek(listOf(aerobic), monday)
+        val withEarly = WeekCalculator.statsForWeek(listOf(aerobic, early), monday)
+        assertEquals(without.rawTotal, withEarly.rawTotal)
+        assertEquals(0, WeekCalculator.statsForWeek(listOf(early), monday).rawTotal)
+    }
+
+    @Test
     fun categoriesOnReturnsUniqueCategoriesForDate() {
         val date = LocalDate.of(2026, 10, 13)
         val workouts = listOf(
@@ -235,10 +255,11 @@ class WeekCalculatorTest {
             workout(Category.STRENGTH, 10, null, date),
             workout(Category.PERIOD, 0, null, date),
             workout(Category.BOWEL, 0, null, date),
+            workout(Category.EARLY_SLEEP, 0, null, date),
             workout(Category.AEROBIC, 20, Intensity.MID, date.plusDays(1)),
         )
         assertEquals(
-            setOf(Category.STRENGTH, Category.BALANCE, Category.PERIOD, Category.BOWEL),
+            setOf(Category.STRENGTH, Category.BALANCE, Category.PERIOD, Category.BOWEL, Category.EARLY_SLEEP),
             WeekCalculator.categoriesOn(workouts, date),
         )
         assertEquals(setOf(Category.AEROBIC), WeekCalculator.categoriesOn(workouts, date.plusDays(1)))

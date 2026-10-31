@@ -137,12 +137,12 @@ fun WorkoutEditorScreen(
         if (sel.isNotEmpty() && sel !in usedNames) listOf(sel) + usedNames else usedNames
     }
     val canSave = when (category) {
-        Category.PERIOD, Category.BOWEL -> true
+        Category.PERIOD, Category.BOWEL, Category.EARLY_SLEEP -> true
         Category.AEROBIC -> !activity.isNullOrBlank() && minutes > 0 && intensity != null
         Category.STRENGTH, Category.BALANCE -> !activity.isNullOrBlank() && minutes > 0
     }
     val topOptions = listOf("有氧", "力量", "平衡", "其他")
-    val otherOptions = listOf(Category.PERIOD, Category.BOWEL)
+    val otherOptions = listOf(Category.PERIOD, Category.BOWEL, Category.EARLY_SLEEP)
 
     Column(
         Modifier
